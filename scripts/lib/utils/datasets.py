@@ -21,6 +21,8 @@ class TextChunksDataset(Dataset):
         self.context_length = context_length
         self.mappingArray = []
         idx = 0
+        if type(raw_data) == str:
+            raw_data = [raw_data]
         for chunk in raw_data:
             chunkTensor = self.tokenizer.encode([END_CHAR] + list(chunk), False)
             self.data.append(chunkTensor)
@@ -34,6 +36,15 @@ class TextChunksDataset(Dataset):
 
     def __len__(self) -> int:
         return len(self.mappingArray)
+
+    def __str__(self):
+        return (
+            "TextChunksDataset(length: "
+            + str(len(self))
+            + ",context_length: "
+            + str(self.context_length)
+            + ")"
+        )
 
     def __getitem__(self, index, block_size=1) -> torch.Tensor:
         if type(index) == int:
@@ -49,3 +60,24 @@ class TextChunksDataset(Dataset):
             for k in range(index.start or 0, index.stop or len(self), index.step or 1):
                 L.append(self[k])
             return L
+
+
+def split_dataset(data, ratio):
+    """
+    Returns (train,test)
+    """
+    if type(data) == list:
+        data = torch.cat(data)
+        n = int(len(data) * ratio)
+        return data[n:], data[:n]
+    elif type(data) == TextChunksDataset:
+        n = int(len(data) * ratio)
+        train_data = TextChunksDataset("", data.context_length)
+        test_data = TextChunksDataset("", data.context_length)
+        train_data.data = data.data
+        train_data.tokenizer = data.tokenizer
+        test_data.data = data.data
+        test_data.tokenizer = data.tokenizer
+        train_data.mappingArray = data.mappingArray[n:]
+        test_data.mappingArray = data.mappingArray[:n]
+        return train_data, test_data
