@@ -1,6 +1,5 @@
 import torch
 
-START_CHAR = "[E]"
 END_CHAR = "[S]"
 
 
@@ -25,7 +24,6 @@ class CharTokenizer:
             ) + "".join([chr(i) for i in range(ord("a"), ord("z") + 1)])
 
         temp = list(set(compiledText))
-        temp.append(START_CHAR)
         temp.append(END_CHAR)
         self.vocab = sorted(temp)
         self.stoi = {ch: i for i, ch in enumerate(self.vocab)}
@@ -37,11 +35,7 @@ class CharTokenizer:
         """
         L = []
         if not isMiddle:
-            L = (
-                [self.stoi[START_CHAR]]
-                + [self.stoi[c] for c in text]
-                + [self.stoi[END_CHAR]]
-            )
+            L = [self.stoi[c] for c in text] + [self.stoi[END_CHAR]]
         else:
             L = [self.stoi[c] for c in text]
         return torch.tensor(L, dtype=torch.long)
@@ -68,9 +62,7 @@ class CharTokenizer:
         """
 
         def nullifySpecialChars(char):
-            if char == START_CHAR:
-                return ""
-            elif char == END_CHAR:
+            if char == END_CHAR:
                 return ""
             return char
 
