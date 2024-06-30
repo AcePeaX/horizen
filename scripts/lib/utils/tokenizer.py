@@ -1,3 +1,5 @@
+import torch
+
 START_CHAR = "[E]"
 END_CHAR = "[S]"
 
@@ -29,17 +31,20 @@ class CharTokenizer:
         self.stoi = {ch: i for i, ch in enumerate(self.vocab)}
         self.itos = {i: ch for i, ch in enumerate(self.vocab)}
 
-    def encode(self, text, isMiddle=True) -> list:
+    def encode(self, text, isMiddle=True) -> torch.Tensor:
         """
         Convert the text into tokens
         """
+        L = []
         if not isMiddle:
-            return (
+            L = (
                 [self.stoi[START_CHAR]]
                 + [self.stoi[c] for c in text]
                 + [self.stoi[END_CHAR]]
             )
-        return [self.stoi[c] for c in text]
+        else:
+            L = [self.stoi[c] for c in text]
+        return torch.tensor(L, dtype=torch.long)
 
     def decode(self, L: list) -> list:
         """
@@ -50,7 +55,7 @@ class CharTokenizer:
         L: list
             list of tokens
         """
-        return [self.itos[i] for i in L]
+        return [self.itos[i.item()] for i in L]
 
     def decodeText(self, L: list) -> str:
         """
@@ -69,4 +74,4 @@ class CharTokenizer:
                 return ""
             return char
 
-        return "".join([nullifySpecialChars(self.itos[i]) for i in L])
+        return "".join([nullifySpecialChars(self.itos[i.item()]) for i in L])
