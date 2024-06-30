@@ -14,7 +14,7 @@ source .venv/bin/activate
 And then install the dependencies:
 
 ```shell
-pip install torch
+pip install torch numpy
 ```
 
 > Note: in the notebooks, don't forget to choose your virtual environment.
