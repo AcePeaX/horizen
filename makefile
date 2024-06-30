@@ -1,2 +1,2 @@
 compile:
-	python3 lib/utils/compile.py
+	python3 scripts/lib/utils/compile.py
