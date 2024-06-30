@@ -2,7 +2,7 @@ START_CHAR = "[E]"
 END_CHAR = "[S]"
 
 
-class HTokenizer:
+class CharTokenizer:
     def __init__(self, text: str, addAlphabet=False) -> None:
         """
         Parameters:
