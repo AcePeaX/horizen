@@ -29,7 +29,7 @@ if __name__ == "__main__":
     result = compileFolder(folder)
     with open(
         os.path.abspath(
-            os.path.join(current_folder, "..", "..", "logs", folder + ".txt")
+            os.path.join(current_folder, "..", "..", "..", "logs", folder + ".txt")
         ),
         "w",
     ) as f:
