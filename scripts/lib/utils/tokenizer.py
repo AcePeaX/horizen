@@ -29,6 +29,9 @@ class CharTokenizer:
         self.stoi = {ch: i for i, ch in enumerate(self.vocab)}
         self.itos = {i: ch for i, ch in enumerate(self.vocab)}
 
+    def __len__(self):
+        return len(self.stoi)
+
     def encode(self, text, isMiddle=True) -> torch.Tensor:
         """
         Convert the text into tokens
