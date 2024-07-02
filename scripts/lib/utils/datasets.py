@@ -53,13 +53,21 @@ class TextChunksDataset(Dataset):
                     self.mappingArray[index] : self.mappingArray[index]
                     + self.context_length
                 ],
-                self.data[self.mappingArray[index] + self.context_length],
+                self.data[
+                    self.mappingArray[index]
+                    + 1 : self.mappingArray[index]
+                    + self.context_length
+                    + 1
+                ],
             )
         elif type(index) == slice:
-            L = []
+            Lx = []
+            Ly = []
             for k in range(index.start or 0, index.stop or len(self), index.step or 1):
-                L.append(self[k])
-            return L
+                x, y = self[k]
+                Lx.append(x)
+                Ly.append(y)
+            return torch.stack(Lx), torch.stack(Ly)
 
 
 def split_dataset(data, ratio):
