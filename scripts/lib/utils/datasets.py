@@ -46,8 +46,9 @@ class TextChunksDataset(Dataset):
             + ")"
         )
 
-    def __getitem__(self, index, block_size=1) -> torch.Tensor:
+    def __getitem__(self, index) -> torch.Tensor:
         if type(index) == int:
+            index = index % len(self)
             return (
                 self.data[
                     self.mappingArray[index] : self.mappingArray[index]
@@ -68,6 +69,17 @@ class TextChunksDataset(Dataset):
                 Lx.append(x)
                 Ly.append(y)
             return torch.stack(Lx), torch.stack(Ly)
+        elif type(index) == torch.Tensor:
+            Lx = []
+            Ly = []
+            if len(index.shape) == 0:
+                return self[index.item()]
+            else:
+                for k in index:
+                    x, y = self[k.item()]
+                    Lx.append(x)
+                    Ly.append(y)
+                return torch.stack(Lx), torch.stack(Ly)
 
 
 def split_dataset(data, ratio):
@@ -89,3 +101,11 @@ def split_dataset(data, ratio):
         train_data.mappingArray = data.mappingArray[n:]
         test_data.mappingArray = data.mappingArray[:n]
         return train_data, test_data
+
+
+def get_batch(data: Dataset, batch_size: int):
+    ix = torch.randint(len(data), (batch_size,))
+    L = data[ix]
+    x = torch.stack([x for x in L[0]])
+    y = torch.stack([x for x in L[1]])
+    return x, y
