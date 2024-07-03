@@ -24,7 +24,7 @@ class CharTokenizer:
             ) + "".join([chr(i) for i in range(ord("a"), ord("z") + 1)])
 
         temp = list(set(compiledText))
-        temp.append(END_CHAR)
+        temp.insert(0, END_CHAR)
         self.vocab = sorted(temp)
         self.stoi = {ch: i for i, ch in enumerate(self.vocab)}
         self.itos = {i: ch for i, ch in enumerate(self.vocab)}

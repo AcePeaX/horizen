@@ -5,6 +5,8 @@ Horizen® is an LLM project that aims to help me train on LLMs and transformers.
 ## Getting started
 
 ### Setup python
+> Note: you need to have python version >= 3.10 . Execute `python3 --version`to check the version
+
 To start using/developping Horizen®, start by setting up a python virtual environment:
 ```shell
 python3 -m venv .venv
