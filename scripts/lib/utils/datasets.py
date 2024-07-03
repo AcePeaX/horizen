@@ -10,10 +10,13 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(dir_path))
 from tokenizer import CharTokenizer, END_CHAR
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class TextChunksDataset(Dataset):
-    def __init__(self, raw_data, context_length, tokenizer=None) -> None:
+    def __init__(self, raw_data, context_length, tokenizer=None, device=device) -> None:
         super().__init__()
+        self.device = device
         self.data = []
         if tokenizer == None:
             tokenizer = CharTokenizer(raw_data)
@@ -24,14 +27,16 @@ class TextChunksDataset(Dataset):
         if type(raw_data) == str:
             raw_data = [raw_data]
         for chunk in raw_data:
-            chunkTensor = self.tokenizer.encode([END_CHAR] + list(chunk), False)
+            chunkTensor = self.tokenizer.encode(
+                [END_CHAR] + list(chunk), False, device=self.device
+            )
             self.data.append(chunkTensor)
             for i in range(len(chunkTensor) - self.context_length - 1):
                 self.mappingArray.append(idx)
                 idx += 1
             self.mappingArray.append(idx)
             idx += self.context_length + 1
-        self.mappingArray = torch.tensor(self.mappingArray)
+        self.mappingArray = torch.tensor(self.mappingArray, device=self.device)
         self.data = torch.cat(self.data)
 
     def __len__(self) -> int:
@@ -104,7 +109,7 @@ def split_dataset(data, ratio):
 
 
 def get_batch(data: Dataset, batch_size: int):
-    ix = torch.randint(len(data), (batch_size,))
+    ix = torch.randint(len(data), (batch_size,), device=data.device)
     L = data[ix]
     x = torch.stack([x for x in L[0]])
     y = torch.stack([x for x in L[1]])

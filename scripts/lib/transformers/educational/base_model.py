@@ -6,17 +6,21 @@ from utils.tokenizer import CharTokenizer
 
 from ..module import Module
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class BigramLanguageBaseModel(Module):
-    def __init__(self, vocab_size: int | CharTokenizer | TextChunksDataset):
+    def __init__(
+        self, vocab_size: int | CharTokenizer | TextChunksDataset, device=device
+    ):
         super().__init__()
-
+        self.device = device
         if type(vocab_size) == TextChunksDataset:
             vocab_size = len(vocab_size.tokenizer)
         elif type(vocab_size) == CharTokenizer:
             vocab_size = len(vocab_size)
         # each token has a probability distribution of appearing depending on the last token
-        self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)
+        self.token_embedding_table = nn.Embedding(vocab_size, vocab_size, device=self.device)
 
     def forward(self, idx, targets=None):
         # idx and targets are both (B,T) tensor of integers
