@@ -4,8 +4,10 @@ from torch.nn import functional as F
 from utils.datasets import TextChunksDataset
 from utils.tokenizer import CharTokenizer
 
+from ..module import Module
 
-class BigramLanguageBaseModel(nn.Module):
+
+class BigramLanguageBaseModel(Module):
     def __init__(self, vocab_size: int | CharTokenizer | TextChunksDataset):
         super().__init__()
 
