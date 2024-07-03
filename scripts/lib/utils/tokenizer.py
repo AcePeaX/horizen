@@ -2,6 +2,8 @@ import torch
 
 END_CHAR = "[S]"
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class CharTokenizer:
     def __init__(self, text: str, addAlphabet=False) -> None:
@@ -32,7 +34,7 @@ class CharTokenizer:
     def __len__(self):
         return len(self.stoi)
 
-    def encode(self, text, isMiddle=True) -> torch.Tensor:
+    def encode(self, text, isMiddle=True, device=device) -> torch.Tensor:
         """
         Convert the text into tokens
         """
@@ -41,7 +43,7 @@ class CharTokenizer:
             L = [self.stoi[c] for c in text] + [self.stoi[END_CHAR]]
         else:
             L = [self.stoi[c] for c in text]
-        return torch.tensor(L, dtype=torch.long)
+        return torch.tensor(L, dtype=torch.long, device=device)
 
     def decode(self, L: list) -> list:
         """
