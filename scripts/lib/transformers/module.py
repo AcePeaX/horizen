@@ -7,7 +7,7 @@ class Module(nn.Module):
         super().__init__(*args, **kwargs)
 
     def save(self, path):
-        torch.save(self.state_dict())
+        torch.save(self.state_dict(), path)
 
     def load(self, path):
         self.load_state_dict(torch.load(path))
