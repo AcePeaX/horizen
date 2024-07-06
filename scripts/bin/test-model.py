@@ -32,11 +32,13 @@ data = TextChunksDataset(raw_data, context_size, tokenizer)
 
 
 #_____________
-target = 'sa-model-books.save'
+target = 'experimental-sa-model-books.save'
 #_____________
 
-m = torch.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target))
+m = torch.load(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target)))
 m.to(device)
+
+print(m.block_size)
 
 autocomplete = ""
 

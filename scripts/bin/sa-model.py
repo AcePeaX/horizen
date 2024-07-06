@@ -26,8 +26,6 @@ test_train_split_ratio = 0.1
 
 n_embd = 256  # Number of embedding
 n_layers = 6  # Number of self attention blocks layers
-
-head_size = 64  # The size of the heads (combined)
 n_heads = 8  # The number of heads
 
 dropout = 0.3 # Dropout rate, to avoid overfitting
@@ -50,7 +48,6 @@ m = BasicSelfAttentionLanguageModel(
     n_embd,
     n_layers,
     context_size=context_size,
-    head_size=head_size,
     n_heads=n_heads,
     dropout=dropout
 )
@@ -59,6 +56,8 @@ m.to(device)
 num_epochs = 1000
 show_loss_each_epoch = 1000
 
+
+target_path=None
 
 def train(optimizer, num_epochs=num_epochs, loss_verbose_interval=show_loss_each_epoch):
     for steps in range(num_epochs):
@@ -73,6 +72,8 @@ def train(optimizer, num_epochs=num_epochs, loss_verbose_interval=show_loss_each
         optimizer.step()
         if (steps + 1) % loss_verbose_interval == 0:
             losses = estimate_loss(m, train_data, test_data, batch_size=batch_size)
+            if target_path!=None:
+                m.save(target_path)
             print(
                 f"step {steps+1}: train loss {losses ['train']:.4f}, val loss {losses ['val']:.4f}"
             )

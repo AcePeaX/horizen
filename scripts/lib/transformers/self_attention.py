@@ -25,7 +25,6 @@ class BasicSelfAttentionLanguageModel(Module):
         n_embd: int,
         n_layers: int,
         context_size=None,
-        head_size=16,
         n_heads=4,
         dropout=0.2,
     ):
@@ -38,15 +37,18 @@ class BasicSelfAttentionLanguageModel(Module):
                 context_size = vocab_size.context_length
             else:
                 raise Exception("You need to specify the context length")
-        self.block_size = context_size
+        self.context_size = context_size
         if type(vocab_size) == TextChunksDataset:
             vocab_size = len(vocab_size.tokenizer)
         elif type(vocab_size) == CharTokenizer:
             vocab_size = len(vocab_size)
+        self.vocab_size = vocab_size
+        self.n_embd = n_embd
+        self.n_heads = n_heads
         # each token has a probability distribution of appearing depending on the last token
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
-        self.position_embedding_table = nn.Embedding(self.block_size, n_embd)
-        self.blocks = nn.Sequential(*[Block(n_embd, n_heads, self.block_size, dropout=dropout) for _ in range(n_layers)])
+        self.position_embedding_table = nn.Embedding(self.context_size, n_embd)
+        self.blocks = nn.Sequential(*[Block(n_embd, n_heads, self.context_size, dropout=dropout) for _ in range(n_layers)])
         self.ln_f = nn.LayerNorm(n_embd)
         self.lm_head = nn.Linear(n_embd, vocab_size)
 
@@ -76,7 +78,7 @@ class BasicSelfAttentionLanguageModel(Module):
     def generate(self, idx, max_new_tokens: int):
         for _ in range(max_new_tokens):
             # get the predictions
-            logits, loss = self(idx[:, -self.block_size :])
+            logits, loss = self(idx[:, -self.context_size :])
             # focus only on the last time step
             logits = logits[:, -1, :]
             # apply softmax to get the probabilities
