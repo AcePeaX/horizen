@@ -1,0 +1,91 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+
+from .module import Module
+from .utils import Block
+
+import sys
+import os
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
+# setting path
+sys.path.append(os.path.join(dir_path, ".."))
+
+from utils.tokenizer import CharTokenizer
+from utils.datasets import TextChunksDataset
+
+
+class BasicSelfAttentionLanguageModel(Module):
+    def __init__(
+        self,
+        vocab_size: int | CharTokenizer | TextChunksDataset,
+        n_embd,
+        n_layers,
+        context_size=None,
+        head_size=16,
+        n_heads=4,
+        dropout=0.2,
+    ):
+        """
+        If vocab_size is a Dataset with context_length, then no need to specify context_size
+        """
+        super().__init__()
+        if context_size == None:
+            if type(vocab_size) == TextChunksDataset:
+                context_size = vocab_size.context_length
+            else:
+                raise Exception("You need to specify the context length")
+        self.block_size = context_size
+        if type(vocab_size) == TextChunksDataset:
+            vocab_size = len(vocab_size.tokenizer)
+        elif type(vocab_size) == CharTokenizer:
+            vocab_size = len(vocab_size)
+        # each token has a probability distribution of appearing depending on the last token
+        self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
+        self.position_embedding_table = nn.Embedding(self.block_size, n_embd)
+        self.blocks = nn.Sequential(
+            Block(n_embd, n_heads, self.block_size, dropout=dropout),
+            Block(n_embd, n_heads, self.block_size, dropout=dropout),
+            Block(n_embd, n_heads, self.block_size, dropout=dropout),
+            nn.LayerNorm(n_embd),
+        )
+        self.lm_head = nn.Linear(n_embd, vocab_size)
+
+    def forward(self, idx, targets=None):
+        B, T = idx.shape
+
+        # idx and targets are both (B,T) tensor of integers
+        tok_embd = self.token_embedding_table(idx)  # (B,T,C)
+        pos_embd = self.position_embedding_table(
+            torch.arange(T, device=idx.device)
+        )  # (T,C)
+        x = tok_embd + pos_embd  # (B,T,C)
+        x = self.blocks(x)
+        logits = self.lm_head(x)  # (B,T,vocab_size)
+
+        if targets is None:
+            loss = None
+        else:
+            B, T, C = logits.shape
+            logits = logits.view(B * T, C)
+            targets = targets.view(B * T)
+            loss = F.cross_entropy(logits, targets)
+
+        return logits, loss
+
+    def generate(self, idx, max_new_tokens: int):
+        for _ in range(max_new_tokens):
+            # get the predictions
+            logits, loss = self(idx[:, -self.block_size :])
+            # focus only on the last time step
+            logits = logits[:, -1, :]
+            # apply softmax to get the probabilities
+            probs = F.softmax(logits, dim=1)
+            # sample from the distribution
+            idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
+            # append sampled text to the running sequence
+            idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
+        return idx
