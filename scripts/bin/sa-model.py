@@ -18,23 +18,25 @@ from utils.datasets import TextChunksDataset, split_dataset, get_batch, estimate
 from transformers import BasicSelfAttentionLanguageModel
 
 # The number of chunks to be processed in parallel
-batch_size = 32
+batch_size = 64
 # The max block size (also known as max context) [in tokens]
-context_size = 16
+context_size = 128
 # How much does the test/validation set represent of the total data
 test_train_split_ratio = 0.1
 
-n_embd = 16  # Number of embedding
-n_layers = 4  # Number of self attention blocks layers
+n_embd = 256  # Number of embedding
+n_layers = 6  # Number of self attention blocks layers
 
-head_size = 16  # The size of the heads (combined)
-n_heads = 4  # The number of heads
+head_size = 64  # The size of the heads (combined)
+n_heads = 8  # The number of heads
+
+dropout = 0.3 # Dropout rate, to avoid overfitting
 
 # Device (gpu or cpu)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Importing the data
-raw_data = compileFolder("tate")
+raw_data = compileFolder(["tate", "books"])
 # Creating the tokenizer
 tokenizer = CharTokenizer(raw_data)
 # Tokenizing and creating the dataset object
@@ -50,8 +52,8 @@ m = BasicSelfAttentionLanguageModel(
     context_size=context_size,
     head_size=head_size,
     n_heads=n_heads,
+    dropout=dropout
 )
-m = m.to(device=device)
 m.to(device)
 
 num_epochs = 1000

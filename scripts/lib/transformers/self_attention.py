@@ -46,12 +46,9 @@ class BasicSelfAttentionLanguageModel(Module):
         # each token has a probability distribution of appearing depending on the last token
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
         self.position_embedding_table = nn.Embedding(self.block_size, n_embd)
-        self.blocks = nn.Sequential(
-            Block(n_embd, n_heads, self.block_size, dropout=dropout),
-            Block(n_embd, n_heads, self.block_size, dropout=dropout),
-            Block(n_embd, n_heads, self.block_size, dropout=dropout),
-            nn.LayerNorm(n_embd),
-        )
+        self.test = 0
+        self.blocks = nn.Sequential(*[Block(n_embd, n_heads, self.block_size, dropout=dropout) for _ in range(n_layers)])
+        self.ln_f = nn.LayerNorm(n_embd)
         self.lm_head = nn.Linear(n_embd, vocab_size)
 
     def forward(self, idx, targets=None):
@@ -64,6 +61,7 @@ class BasicSelfAttentionLanguageModel(Module):
         )  # (T,C)
         x = tok_embd + pos_embd  # (B,T,C)
         x = self.blocks(x)
+        x = self.ln_f(x)
         logits = self.lm_head(x)  # (B,T,vocab_size)
 
         if targets is None:
@@ -89,3 +87,6 @@ class BasicSelfAttentionLanguageModel(Module):
             # append sampled text to the running sequence
             idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
         return idx
+
+    def save(self, path):
+        torch.save(self, path)
