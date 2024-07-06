@@ -38,7 +38,6 @@ target = 'experimental-sa-model-books.save'
 m = torch.load(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target)))
 m.to(device)
 
-print(m.block_size)
 
 autocomplete = ""
 
