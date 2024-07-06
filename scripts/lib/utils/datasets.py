@@ -108,9 +108,32 @@ def split_dataset(data, ratio):
         return train_data, test_data
 
 
-def get_batch(data: Dataset, batch_size: int):
+def get_batch(data: Dataset, batch_size: int, device=device):
     ix = torch.randint(len(data), (batch_size,), device=data.device)
     L = data[ix]
     x = torch.stack([x for x in L[0]])
     y = torch.stack([x for x in L[1]])
+    x, y = x.to(device), y.to(device)
     return x, y
+
+
+@torch.no_grad()
+def estimate_loss(
+    model,
+    x_train: TextChunksDataset,
+    x_val: TextChunksDataset,
+    eval_iterations=50,
+    batch_size=32,
+):
+    """Estimate the train and validation tests on a chunk of the dataset"""
+    out = {}
+    model.eval()
+    for label, data in zip(["train", "val"], [x_train, x_val]):
+        losses = torch.zeros(eval_iterations)
+        for k in range(eval_iterations):
+            X, Y = get_batch(data, batch_size)
+            _, loss = model(X, Y)
+            losses[k] = loss.item()
+        out[label] = losses.mean()
+    model.train()
+    return out
