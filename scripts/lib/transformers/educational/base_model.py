@@ -4,7 +4,14 @@ from torch.nn import functional as F
 from utils.datasets import TextChunksDataset
 from utils.tokenizer import CharTokenizer
 
-from ..module import Module
+import sys
+import os
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
+# setting path
+sys.path.append(os.path.join(dir_path, ".."))
+from module import Module
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -20,7 +27,9 @@ class BigramLanguageBaseModel(Module):
         elif type(vocab_size) == CharTokenizer:
             vocab_size = len(vocab_size)
         # each token has a probability distribution of appearing depending on the last token
-        self.token_embedding_table = nn.Embedding(vocab_size, vocab_size, device=self.device)
+        self.token_embedding_table = nn.Embedding(
+            vocab_size, vocab_size, device=self.device
+        )
 
     def forward(self, idx, targets=None):
         # idx and targets are both (B,T) tensor of integers
