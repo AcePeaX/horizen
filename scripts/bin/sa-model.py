@@ -44,7 +44,14 @@ data = TextChunksDataset(raw_data, block_size, tokenizer)
 train_data, test_data = split_dataset(data, test_train_split_ratio)
 
 
-m = BasicSelfAttentionLanguageModel(train_data, n_embd)
+m = BasicSelfAttentionLanguageModel(
+    train_data,
+    n_embd,
+    n_layers,
+    context_size=context_size,
+    head_size=head_size,
+    n_heads=n_heads,
+)
 m.to(device)
 xb, yb = train_data[:10]
 out = m(xb, yb)

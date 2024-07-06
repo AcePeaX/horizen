@@ -22,8 +22,8 @@ class BasicSelfAttentionLanguageModel(Module):
     def __init__(
         self,
         vocab_size: int,
-        n_embd,
-        n_layers,
+        n_embd: int,
+        n_layers: int,
         context_size=None,
         head_size=16,
         n_heads=4,
