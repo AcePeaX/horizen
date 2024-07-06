@@ -21,7 +21,7 @@ from utils.datasets import TextChunksDataset
 class BasicSelfAttentionLanguageModel(Module):
     def __init__(
         self,
-        vocab_size: int | CharTokenizer | TextChunksDataset,
+        vocab_size: int,
         n_embd,
         n_layers,
         context_size=None,

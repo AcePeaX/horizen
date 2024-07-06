@@ -18,7 +18,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class BigramLanguageBaseModel(Module):
     def __init__(
-        self, vocab_size: int | CharTokenizer | TextChunksDataset, device=device
+        self, vocab_size: int, device=device
     ):
         super().__init__()
         self.device = device
