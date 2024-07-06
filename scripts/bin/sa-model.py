@@ -20,15 +20,14 @@ from transformers import BasicSelfAttentionLanguageModel
 # The number of chunks to be processed in parallel
 batch_size = 32
 # The max block size (also known as max context) [in tokens]
-block_size = 16
+context_size = 16
 # How much does the test/validation set represent of the total data
 test_train_split_ratio = 0.1
 
 n_embd = 16  # Number of embedding
 n_layers = 4  # Number of self attention blocks layers
-context_size = 16  # Context length
 
-head_size = 16  # The size of the heads (combiened)
+head_size = 16  # The size of the heads (combined)
 n_heads = 4  # The number of heads
 
 # Device (gpu or cpu)
@@ -39,7 +38,7 @@ raw_data = compileFolder("tate")
 # Creating the tokenizer
 tokenizer = CharTokenizer(raw_data)
 # Tokenizing and creating the dataset object
-data = TextChunksDataset(raw_data, block_size, tokenizer)
+data = TextChunksDataset(raw_data, context_size, tokenizer)
 
 train_data, test_data = split_dataset(data, test_train_split_ratio)
 
@@ -52,14 +51,8 @@ m = BasicSelfAttentionLanguageModel(
     head_size=head_size,
     n_heads=n_heads,
 )
+m = m.to(device=device)
 m.to(device)
-xb, yb = train_data[:10]
-out = m(xb, yb)
-print(
-    tokenizer.decodeText(
-        m.generate(idx=torch.zeros((1, 1), dtype=torch.long), max_new_tokens=100)[0]
-    )
-)
 
 num_epochs = 1000
 show_loss_each_epoch = 1000
@@ -93,12 +86,20 @@ def autoCompletePrint(model, text, max_tokens=300, step=1):
         res = m.generate(idx=idx, max_new_tokens=2)
         print(tokenizer.decodeText(res[0][i + j : i + j + step]), end="")
         idx = res
+    print('')
 
 
 # create a PyTorch optimizer
-optimizer = torch.optim.AdamW(m.parameters(), lr=1e-4)
+optimizer = torch.optim.AdamW(m.parameters(), lr=3*1e-4)
 
 if __name__ == "__main__":
+    target = input('What is the target file : ')
+    target_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target)
+    if(os.path.isfile(target_path)):
+        m.load(target_path)
+        print('Loaded.')
     epochs = int(input("How many epochs : "))
     train(optimizer, epochs)
-    autoCompletePrint("I am the best")
+    autoCompletePrint(m, "I am the best")
+    m.save(target_path)
+    print('\nSaved.')
