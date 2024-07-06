@@ -43,6 +43,8 @@ autocomplete = ""
 
 max_tokens = 200
 
+print('Loaded the model :',target,'with ',end='')
+print (sum(p.numel()for p in m. parameters())/1e6,'M parameters')
 
 autocomplete = input("Type in some text to autocomplete (STOP to stop) : ")
 while autocomplete!='STOP':
@@ -55,6 +57,6 @@ while autocomplete!='STOP':
     for i in range(len(idx[0]),len(res[0])):
         if res[0,i].item()==0 and False:
             break
-    print(tokenizer.decodeText(res[0,:i+1]))
+    print(tokenizer.decodeText(res[0,:i+1])+"\n")
     autocomplete = input("Type in some text to autocomplete (STOP to stop) : ")
 

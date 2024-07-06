@@ -20,15 +20,15 @@ from transformers import BasicSelfAttentionLanguageModel
 # The number of chunks to be processed in parallel
 batch_size = 64
 # The max block size (also known as max context) [in tokens]
-context_size = 128
+context_size = 256
 # How much does the test/validation set represent of the total data
 test_train_split_ratio = 0.1
 
-n_embd = 256  # Number of embedding
+n_embd = 384  # Number of embedding
 n_layers = 6  # Number of self attention blocks layers
-n_heads = 8  # The number of heads
+n_heads = 6  # The number of heads
 
-dropout = 0.3 # Dropout rate, to avoid overfitting
+dropout = 0.2   # Dropout rate, to avoid overfitting
 
 # Device (gpu or cpu)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -54,7 +54,7 @@ m = BasicSelfAttentionLanguageModel(
 m.to(device)
 
 num_epochs = 1000
-show_loss_each_epoch = 1000
+show_loss_each_epoch = 250
 
 
 target_path=None
@@ -100,6 +100,7 @@ if __name__ == "__main__":
     target_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target)
     if(os.path.isfile(target_path)):
         m.load(target_path)
+        optimizer = torch.optim.AdamW(m.parameters(), lr=3*1e-4)
         print('Loaded.')
     epochs = int(input("How many epochs : "))
     train(optimizer, epochs)
