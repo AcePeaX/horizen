@@ -46,7 +46,6 @@ class BasicSelfAttentionLanguageModel(Module):
         # each token has a probability distribution of appearing depending on the last token
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
         self.position_embedding_table = nn.Embedding(self.block_size, n_embd)
-        self.test = 0
         self.blocks = nn.Sequential(*[Block(n_embd, n_heads, self.block_size, dropout=dropout) for _ in range(n_layers)])
         self.ln_f = nn.LayerNorm(n_embd)
         self.lm_head = nn.Linear(n_embd, vocab_size)
@@ -90,3 +89,11 @@ class BasicSelfAttentionLanguageModel(Module):
 
     def save(self, path):
         torch.save(self, path)
+
+    def load(self, path):
+        m = torch.load(path)
+        self.token_embedding_table = m.token_embedding_table
+        self.position_embedding_table = m.position_embedding_table
+        self.blocks = m.blocks
+        self.ln_f = m.ln_f
+        self.lm_head = m.lm_head

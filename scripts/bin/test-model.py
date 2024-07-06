@@ -32,7 +32,7 @@ data = TextChunksDataset(raw_data, context_size, tokenizer)
 
 
 #_____________
-target = 'sa-model-books-2.save'
+target = 'sa-model-books.save'
 #_____________
 
 m = torch.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target))
