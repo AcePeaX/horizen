@@ -24,9 +24,9 @@ context_size = 256
 # How much does the test/validation set represent of the total data
 test_train_split_ratio = 0.1
 
-n_embd = 384  # Number of embedding
-n_layers = 6  # Number of self attention blocks layers
-n_heads = 6  # The number of heads
+n_embd = 512  # Number of embedding
+n_layers = 7  # Number of self attention blocks layers
+n_heads = 8  # The number of heads
 
 dropout = 0.2   # Dropout rate, to avoid overfitting
 
@@ -38,6 +38,7 @@ raw_data = compileFolder(["tate", "books"])
 # Creating the tokenizer
 tokenizer = CharTokenizer(raw_data)
 # Tokenizing and creating the dataset object
+raw_data = compileFolder(["tate"])
 data = TextChunksDataset(raw_data, context_size, tokenizer)
 
 train_data, test_data = split_dataset(data, test_train_split_ratio)
