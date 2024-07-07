@@ -1,4 +1,5 @@
+
+!tokenizers/bpe_500.tok
 *
 
 !.gitignore
-!bpe_500.tok
