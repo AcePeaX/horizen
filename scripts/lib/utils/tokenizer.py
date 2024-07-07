@@ -1,4 +1,6 @@
 import torch
+from tiktoken import Encoding
+import regex as re
 
 END_CHAR = "[S]"
 
@@ -72,3 +74,120 @@ class CharTokenizer:
             return char
 
         return "".join([nullifySpecialChars(self.itos[i.item()]) for i in L])
+
+
+# ________________________________________________________________________________________
+def get_stats(ids):
+    if len(ids) == 0:
+        return
+    counts = {}
+    if type(ids[0]) == list:
+        for chunk in ids:
+            for pair in zip(chunk, chunk[1:]):
+                counts[pair] = counts.get(pair, 0) + 1
+    else:
+        for pair in zip(ids, ids[1:]):
+            counts[pair] = counts.get(pair, 0) + 1
+    return counts
+
+
+def merge(ids, pair, idx):
+    if len(ids) == 0:
+        return
+    if type(ids[0]) == list:
+        newIds = []
+        for ids_chunk in ids:
+            i = 0
+            subNewIds = []
+            while i < len(ids_chunk):
+                if (
+                    i < len(ids_chunk) - 1
+                    and ids_chunk[i] == pair[0]
+                    and ids_chunk[i + 1] == pair[1]
+                ):
+                    subNewIds.append(idx)
+                    i += 2
+                else:
+                    subNewIds.append(ids_chunk[i])
+                    i += 1
+            newIds.append(subNewIds)
+        return newIds
+    else:
+        newIds = []
+        i = 0
+        while i < len(ids):
+            if i < len(ids) - 1 and ids[i] == pair[0] and ids[i + 1] == pair[1]:
+                newIds.append(idx)
+                i += 2
+            else:
+                newIds.append(ids[i])
+                i += 1
+        return newIds
+
+
+class BPETokenizer:
+    def __init__(self) -> None:
+        self.vocab = {idx: bytes([idx]) for idx in range(256)}
+        self.mergeable_ranks = {bytes([idx]): idx for idx in range(256)}
+        self.tokenizer = Encoding(
+            "custom-encoding",
+            pat_str=r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""",
+            mergeable_ranks=self.mergeable_ranks,
+            special_tokens={},
+        )
+
+    def addMerges(self, text, num_merges=1, verbose=False):
+        tokenizer_pat = re.compile(
+            r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+        )
+        if verbose:
+            print("preparing....", end="")
+        splitted_data = re.findall(tokenizer_pat, text)
+        ids = []
+        for chunk in splitted_data:
+            ids.append(self.tokenizer.encode(chunk))
+        if verbose:
+            print("done")
+        vocab_len = len(self.vocab)
+        for i in range(num_merges):
+            stats = get_stats(ids)
+            top_pair = max(stats, key=stats.get)
+            idx = vocab_len + i
+            if verbose:
+                print(f"{i+1}/{num_merges} merging {top_pair} into a new token {idx}")
+            ids = merge(ids, top_pair, idx)
+            self.mergeable_ranks[self.vocab[top_pair[0]] + self.vocab[top_pair[1]]] = (
+                idx
+            )
+            self.vocab[idx] = self.vocab[top_pair[0]] + self.vocab[top_pair[1]]
+        self.tokenizer = self.tokenizer = Encoding(
+            "custom-encoding",
+            pat_str=r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""",
+            mergeable_ranks=self.mergeable_ranks,
+            special_tokens={},
+        )
+
+    def __len__(self):
+        return len(self.vocab)
+
+    def encode(self, text):
+        return self.tokenizer.encode(text)
+
+    def decode(self, tokens):
+        return self.tokenizer.decode(tokens)
+
+    def save(self, path: str):
+        torch.save(self.vocab, path)
+
+    @classmethod
+    def load(cls, path: str):
+        BPE_tok = cls()
+        BPE_tok.vocab = torch.load(path)
+        BPE_tok.mergeable_ranks = {byte: idx for idx, byte in BPE_tok.vocab.items()}
+        BPE_tok.tokenizer = Encoding(
+            "custom-encoding",
+            pat_str=r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""",
+            mergeable_ranks=BPE_tok.mergeable_ranks,
+            special_tokens={},
+        )
+        return BPE_tok
