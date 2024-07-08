@@ -16,7 +16,7 @@ source .venv/bin/activate
 And then install the dependencies:
 
 ```shell
-pip install torch numpy regex
+python -m pip install torch numpy regex datasets
 ```
 
 > Note: in the notebooks, don't forget to choose your virtual environment.
