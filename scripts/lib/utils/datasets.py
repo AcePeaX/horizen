@@ -28,8 +28,10 @@ class TextChunksDataset(Dataset):
             raw_data = [raw_data]
         for chunk in raw_data:
             chunkTensor = self.tokenizer.encode(
-                [END_CHAR] + list(chunk), False, device=self.device
+                chunk, device=self.device
             )
+            if(type(chunkTensor)!=torch.Tensor):
+                chunkTensor = torch.tensor(chunkTensor, dtype=torch.long, device=device)
             if(len(chunkTensor)<context_length):
                 chunkTensor = torch.cat([chunkTensor, torch.zeros(context_length-len(chunkTensor)+1, dtype=torch.long, device=device)])
             self.data.append(chunkTensor)

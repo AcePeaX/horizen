@@ -170,10 +170,12 @@ class BPETokenizer:
     def __len__(self):
         return len(self.vocab)
 
-    def encode(self, text):
+    def encode(self, text, device=None):
         return self.tokenizer.encode(text)
 
     def decode(self, tokens):
+        if type(tokens)==torch.Tensor:
+            tokens = [i.item() for i in tokens]
         return self.tokenizer.decode(tokens)
 
     def save(self, path: str):

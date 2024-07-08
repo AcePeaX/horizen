@@ -12,7 +12,7 @@ sys.path.append(dir_path)
 
 
 from utils.compile import compileFolder
-from utils.tokenizer import CharTokenizer, END_CHAR
+from utils.tokenizer import CharTokenizer, BPETokenizer, END_CHAR
 from utils.datasets import TextChunksDataset, split_dataset, get_batch, estimate_loss
 
 from transformers import BasicSelfAttentionLanguageModel
@@ -34,11 +34,11 @@ dropout = 0.2   # Dropout rate, to avoid overfitting
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Importing the data
-raw_data = compileFolder(["tate", "books"])
-# Creating the tokenizer
-tokenizer = CharTokenizer(raw_data)
-# Tokenizing and creating the dataset object
 raw_data = compileFolder(["tate"])
+# Creating the tokenizer
+#tokenizer = CharTokenizer(raw_data)
+tokenizer = BPETokenizer.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves','tokenizers/bpe_500.tok'))
+# Tokenizing and creating the dataset object
 data = TextChunksDataset(raw_data, context_size, tokenizer)
 
 train_data, test_data = split_dataset(data, test_train_split_ratio)
@@ -55,7 +55,7 @@ m = BasicSelfAttentionLanguageModel(
 m.to(device)
 
 num_epochs = 1000
-show_loss_each_epoch = 250
+show_loss_each_epoch = 200
 
 
 target_path=None
@@ -72,7 +72,7 @@ def train(optimizer, num_epochs=num_epochs, loss_verbose_interval=show_loss_each
         loss.backward()
         optimizer.step()
         if (steps + 1) % loss_verbose_interval == 0:
-            losses = estimate_loss(m, train_data, test_data, batch_size=batch_size)
+            losses = estimate_loss(m, train_data, test_data, batch_size=batch_size, eval_iterations=10)
             if target_path!=None:
                 m.save(target_path)
             print(
@@ -81,14 +81,14 @@ def train(optimizer, num_epochs=num_epochs, loss_verbose_interval=show_loss_each
     print("done!")
 
 
-def autoCompletePrint(model, text, max_tokens=300, step=1):
-    idx = tokenizer.encode(text)
+def autoCompletePrint(model, text, max_tokens=200, step=1):
+    idx = torch.tensor(tokenizer.encode(text), dtype=torch.long, device=device)
     i = len(idx)
     print(text, end="")
     idx = torch.reshape(idx, (1, len(idx)))
     for j in range(0, max_tokens, step):
         res = m.generate(idx=idx, max_new_tokens=2)
-        print(tokenizer.decodeText(res[0][i + j : i + j + step]), end="")
+        print(tokenizer.decode(res[0][i + j : i + j + step]), end="")
         idx = res
     print('')
 
