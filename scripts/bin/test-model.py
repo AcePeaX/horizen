@@ -15,7 +15,7 @@ from utils.compile import compileFolder
 from utils.tokenizer import CharTokenizer, END_CHAR, BPETokenizer
 from utils.datasets import TextChunksDataset, split_dataset, get_batch, estimate_loss
 
-from transformers import BasicSelfAttentionLanguageModel
+from models import BasicSelfAttentionLanguageModel
 
 # The max block size (also known as max context) [in tokens]
 context_size = 32
@@ -32,7 +32,7 @@ data = TextChunksDataset(raw_data, context_size, tokenizer)
 
 
 #_____________
-target = 'sa-model-500-lm.save'
+target = 'sa-model-500-xl.save'
 #_____________
 
 m = torch.load(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target)))
