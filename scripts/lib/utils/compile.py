@@ -10,17 +10,21 @@ def compileFolder(folder_name):
 
     Parameters
     ----------
-    folder_name: str
-        The name of the folder to scrape (within assets folder)
+    folder_name: string or array
+        The name(s) of the folder to scrape (within assets folder)
     """
-    folder_path = os.path.abspath(
-        os.path.join(current_folder, "..", "..", "..", "assets", folder_name)
-    )
+    folder_paths = folder_name
+    if type(folder_name) == str:
+        folder_paths = [folder_name]
     content = []
-    for file in os.listdir(folder_path):
-        if file.endswith(".txt"):
-            with open(os.path.join(folder_path, file)) as f:
-                content.append("".join(f.readlines()))
+    for path in folder_paths:
+        folder_path = os.path.abspath(
+            os.path.join(current_folder, "..", "..", "..", "assets", path)
+        )
+        for file in os.listdir(folder_path):
+            if file.endswith(".txt"):
+                with open(os.path.join(folder_path, file)) as f:
+                    content.append("".join(f.readlines()))
     return content
 
 

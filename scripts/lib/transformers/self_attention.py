@@ -21,11 +21,10 @@ from utils.datasets import TextChunksDataset
 class BasicSelfAttentionLanguageModel(Module):
     def __init__(
         self,
-        vocab_size: int | CharTokenizer | TextChunksDataset,
-        n_embd,
-        n_layers,
+        vocab_size: int,
+        n_embd: int,
+        n_layers: int,
         context_size=None,
-        head_size=16,
         n_heads=4,
         dropout=0.2,
     ):
@@ -38,20 +37,19 @@ class BasicSelfAttentionLanguageModel(Module):
                 context_size = vocab_size.context_length
             else:
                 raise Exception("You need to specify the context length")
-        self.block_size = context_size
+        self.context_size = context_size
         if type(vocab_size) == TextChunksDataset:
             vocab_size = len(vocab_size.tokenizer)
         elif type(vocab_size) == CharTokenizer:
             vocab_size = len(vocab_size)
+        self.vocab_size = vocab_size
+        self.n_embd = n_embd
+        self.n_heads = n_heads
         # each token has a probability distribution of appearing depending on the last token
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
-        self.position_embedding_table = nn.Embedding(self.block_size, n_embd)
-        self.blocks = nn.Sequential(
-            Block(n_embd, n_heads, self.block_size, dropout=dropout),
-            Block(n_embd, n_heads, self.block_size, dropout=dropout),
-            Block(n_embd, n_heads, self.block_size, dropout=dropout),
-            nn.LayerNorm(n_embd),
-        )
+        self.position_embedding_table = nn.Embedding(self.context_size, n_embd)
+        self.blocks = nn.Sequential(*[Block(n_embd, n_heads, self.context_size, dropout=dropout) for _ in range(n_layers)])
+        self.ln_f = nn.LayerNorm(n_embd)
         self.lm_head = nn.Linear(n_embd, vocab_size)
 
     def forward(self, idx, targets=None):
@@ -64,6 +62,7 @@ class BasicSelfAttentionLanguageModel(Module):
         )  # (T,C)
         x = tok_embd + pos_embd  # (B,T,C)
         x = self.blocks(x)
+        x = self.ln_f(x)
         logits = self.lm_head(x)  # (B,T,vocab_size)
 
         if targets is None:
@@ -79,7 +78,7 @@ class BasicSelfAttentionLanguageModel(Module):
     def generate(self, idx, max_new_tokens: int):
         for _ in range(max_new_tokens):
             # get the predictions
-            logits, loss = self(idx[:, -self.block_size :])
+            logits, loss = self(idx[:, -self.context_size :])
             # focus only on the last time step
             logits = logits[:, -1, :]
             # apply softmax to get the probabilities
@@ -89,3 +88,14 @@ class BasicSelfAttentionLanguageModel(Module):
             # append sampled text to the running sequence
             idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
         return idx
+
+    def save(self, path):
+        torch.save(self, path)
+
+    def load(self, path):
+        m = torch.load(path)
+        self.token_embedding_table = m.token_embedding_table
+        self.position_embedding_table = m.position_embedding_table
+        self.blocks = m.blocks
+        self.ln_f = m.ln_f
+        self.lm_head = m.lm_head

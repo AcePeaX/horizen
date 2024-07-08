@@ -30,6 +30,8 @@ class TextChunksDataset(Dataset):
             chunkTensor = self.tokenizer.encode(
                 [END_CHAR] + list(chunk), False, device=self.device
             )
+            if(len(chunkTensor)<context_length):
+                chunkTensor = torch.cat([chunkTensor, torch.zeros(context_length-len(chunkTensor)+1, dtype=torch.long, device=device)])
             self.data.append(chunkTensor)
             for i in range(len(chunkTensor) - self.context_length - 1):
                 self.mappingArray.append(idx)
