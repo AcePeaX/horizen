@@ -22,15 +22,16 @@ class Head(nn.Module):
         B, T, C = x.shape
         k = self.key(x)  # (B, T, C)
         q = self.query(x)  # (B, T, C)
-        # Compute attention score ('affinities')
-        wei = (
-            q @ k.transpose(-2, -1) * (self.head_size**-0.5)
-        )  # (B, T, head_size) @ (B, head_size, T) --> (B, T, T)
-        wei = wei.masked_fill(self.tril[:T, :T] == 0, float("-inf"))  # (B, T, T)
-        wei = F.softmax(wei, dim=-1)
-        # Perform the weighted aggregation of the values
         v = self.value(x)  # (B, T, C)
-        out = wei @ v  # (B, T, T) @ (B, T, C) --> (B, T, C)
+        # Compute attention score ('affinities')
+        #wei = (
+        #    q @ k.transpose(-2, -1) * (self.head_size**-0.5)
+        #)  # (B, T, head_size) @ (B, head_size, T) --> (B, T, T)
+        #wei = wei.masked_fill(self.tril[:T, :T] == 0, float("-inf"))  # (B, T, T)
+        #wei = F.softmax(wei, dim=-1)
+        # Perform the weighted aggregation of the values
+        #out = wei @ v  # (B, T, T) @ (B, T, C) --> (B, T, C)
+        out = F.scaled_dot_product_attention(q, k, v, is_causal=True)
         return out  # (B, T, C)
 
 

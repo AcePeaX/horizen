@@ -1,6 +1,6 @@
 import torch
 from datasets import load_dataset
-
+import time
 
 
 import sys
@@ -26,9 +26,9 @@ context_size = 256
 # How much does the test/validation set represent of the total data
 test_train_split_ratio = 0.08
 
-n_embd = 640  # Number of embedding
-n_layers = 9  # Number of self attention blocks layers
-n_heads = 10  # The number of heads
+n_embd = 768  # Number of embedding
+n_layers = 12  # Number of self attention blocks layers
+n_heads = 12  # The number of heads
 
 dropout = 0.2   # Dropout rate, to avoid overfitting
 
@@ -36,9 +36,9 @@ dropout = 0.2   # Dropout rate, to avoid overfitting
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Importing the data
-folders = ["tate" for i in range(2)]
-folders.append("books")
-folders.append("tate")
+folders = ["tate" for i in range(5)]
+#folders.append("books")
+#folders.append("tate")
 raw_data = compileFolder(folders)
 # Adding the wikipedia dataset
 wikitext = load_dataset("Salesforce/wikitext", "wikitext-2-raw-v1")
@@ -62,6 +62,7 @@ dataLLM = TextChunksDataset(["Who are you? I am a large language model, designed
 
 train_data, test_data = split_dataset(data, test_train_split_ratio)
 
+torch.set_float32_matmul_precision('high')
 
 m = BasicSelfAttentionLanguageModel(
     train_data,
@@ -75,6 +76,7 @@ m.to(device)
 
 num_epochs = 1000
 show_loss_each_epoch = 200
+save_each = 30
 
 
 def get_batch2(data, batch_size):
@@ -85,27 +87,40 @@ def get_batch2(data, batch_size):
     return normal_batch
 
 
+
 target_path=None
 
-def train(optimizer, num_epochs=num_epochs, loss_verbose_interval=show_loss_each_epoch):
+def train(optimizer, num_epochs=num_epochs,loss_verbose_interval=show_loss_each_epoch,save_each=save_each):
+    last_saved = 0
     for steps in range(num_epochs):
 
         # sample a batch of data
         xb, yb = get_batch2(train_data, batch_size)
 
         # evaluate the loss
+        t0 = time.time()
         logits, loss = m(xb, yb)
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
+        norm = torch.nn.utils.clip_grad_norm_(m.parameters(), 1.0)
         optimizer.step()
+        torch.cuda.synchronize()
+        t1 = time.time()
+        dt = (t1 - t0)*1000
+        print(f"\rstep {steps+1}, loss: {loss.item():.3f}, dt: {dt:.2f}ms, last saved: {last_saved}",end="               ")
         if (steps + 1) % loss_verbose_interval == 0:
             losses = estimate_loss(m, train_data, test_data, batch_size=batch_size, eval_iterations=10)
             if target_path!=None:
                 m.save(target_path)
+                last_saved = steps+1
             print(
-                f"step {steps+1}: train loss {losses ['train']:.4f}, val loss {losses ['val']:.4f}"
+                f"\nstep {steps+1}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}"
             )
-    print("done!")
+        elif (steps+1) % save_each==0:
+            if target_path!=None:
+                m.save(target_path)
+                last_saved = steps+1
+    print("\ndone!")
 
 
 def autoCompletePrint(model, text, max_tokens=200, step=1):
@@ -121,15 +136,18 @@ def autoCompletePrint(model, text, max_tokens=200, step=1):
 
 
 # create a PyTorch optimizer
-optimizer = torch.optim.AdamW(m.parameters(), lr=3*1e-4)
+optimizer = torch.optim.AdamW(m.parameters(), lr=1*1e-4, betas=(0.9, 0.95))
 
 if __name__ == "__main__":
     target = input('What is the target file : ')
     target_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target)
     if(os.path.isfile(target_path)):
         m.load(target_path)
-        optimizer = torch.optim.AdamW(m.parameters(), lr=3*1e-4)
+        optimizer = torch.optim.AdamW(m.parameters(), lr=1*1e-4)
         print('Loaded.')
+    print('Started compiling...',end='')
+    m = torch.compile(m)
+    print('compiled!')
     epochs = int(input("How many epochs : "))
     train(optimizer, epochs)
     autoCompletePrint(m, "I am the best")
