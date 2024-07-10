@@ -126,17 +126,20 @@ def merge(ids, pair, idx):
 
 
 class BPETokenizer:
-    def __init__(self) -> None:
+    def __init__(self, special_tokens={}) -> None:
         self.vocab = {idx: bytes([idx]) for idx in range(256)}
         self.mergeable_ranks = {bytes([idx]): idx for idx in range(256)}
+        self.special_tokens = special_tokens
         self.tokenizer = Encoding(
             "custom-encoding",
             pat_str=r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""",
             mergeable_ranks=self.mergeable_ranks,
-            special_tokens={},
+            special_tokens=special_tokens,
         )
 
     def addMerges(self, text, num_merges=1, verbose=False):
+        if num_merges == 0:
+            return
         tokenizer_pat = re.compile(
             r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
         )
@@ -164,32 +167,63 @@ class BPETokenizer:
             "custom-encoding",
             pat_str=r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""",
             mergeable_ranks=self.mergeable_ranks,
-            special_tokens={},
+            special_tokens=self.special_tokens,
         )
 
     def __len__(self):
-        return len(self.vocab)
+        return len(self.vocab) + len(self.special_tokens)
 
-    def encode(self, text, device=None):
-        return self.tokenizer.encode(text)
+    def encode(
+        self, text, allowed_special=set(), disallowed_special="all", device=None
+    ):
+        return self.tokenizer.encode(
+            text,
+            allowed_special=allowed_special,
+            disallowed_special=disallowed_special,
+        )
 
     def decode(self, tokens):
-        if type(tokens)==torch.Tensor:
+        if type(tokens) == torch.Tensor:
             tokens = [i.item() for i in tokens]
         return self.tokenizer.decode(tokens)
 
     def save(self, path: str):
-        torch.save(self.vocab, path)
+        torch.save({"vocab": self.vocab, "spec_t": self.special_tokens}, path)
 
     @classmethod
     def load(cls, path: str):
         BPE_tok = cls()
-        BPE_tok.vocab = torch.load(path)
+        temp = torch.load(path)
+        BPE_tok.vocab = temp["vocab"]
+        BPE_tok.special_tokens = temp["spec_t"]
         BPE_tok.mergeable_ranks = {byte: idx for idx, byte in BPE_tok.vocab.items()}
         BPE_tok.tokenizer = Encoding(
             "custom-encoding",
             pat_str=r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""",
             mergeable_ranks=BPE_tok.mergeable_ranks,
-            special_tokens={},
+            special_tokens=BPE_tok.special_tokens,
         )
         return BPE_tok
+
+    @property
+    def eot_token(self) -> int:
+        return self.special_tokens["<|endoftext|>"]
+
+
+def showTokensDecode(tokenizer, text):
+    colorCode = [
+        "\x1b[30m\x1b[42m",
+        "\x1b[30m\x1b[43m",
+        "\x1b[30m\x1b[44m",
+        "\x1b[30m\x1b[45m",
+        "\x1b[30m\x1b[46m",
+        "\x1b[100m",
+        "\x1b[40m",
+    ]
+    tokens = tokenizer.encode(text)
+    i = 0
+    for idx in tokens:
+        i = i % len(colorCode)
+        print("\x1b[1m" + colorCode[i] + tokenizer.decode([idx]), end="\x1b[0m")
+        i += 1
+    print("\x1b[0m", end="\n")  # Reset

@@ -16,7 +16,7 @@ source .venv/bin/activate
 And then install the dependencies:
 
 ```shell
-python -m pip install torch numpy regex datasets
+python3 -m pip install torch numpy regex datasets tiktoken
 ```
 
 > Note: in the notebooks, don't forget to choose your virtual environment.
