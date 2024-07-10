@@ -18,6 +18,10 @@ And then install the dependencies:
 ```shell
 python3 -m pip install torch numpy regex datasets tiktoken
 ```
+or simply 
+```shell
+python3 -m pip install -r requirements.txt
+```
 
 > Note: in the notebooks, don't forget to choose your virtual environment.
 
