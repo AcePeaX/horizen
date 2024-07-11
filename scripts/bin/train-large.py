@@ -3,6 +3,7 @@ from datasets import load_dataset
 import time
 from tqdm import tqdm
 import math
+import csv
 
 import sys
 import os
@@ -66,7 +67,9 @@ m.to(device)
 
 num_epochs = 1000
 show_loss_each_epoch = 200
-save_each = 5
+save_each = 10
+val_loss_frequency = 100
+gen_frequency = 100
 
 
 max_lr = 6e-4
@@ -87,15 +90,20 @@ def get_lr(it):
     return min_lr + coeff * (max_lr - min_lr)
 
 
-target_path=None
+target_path = None
+csv_path = None
+csv_gen_path = None
+csv_fields = ['epoch','train_loss','val_loss','lr']
+csv_gen_fields = ['epoch','prompt','generated']
 
-def train(optimizer, start_epoch=0,num_epochs=num_epochs,loss_verbose_interval=show_loss_each_epoch,save_each=save_each):
+def train(optimizer: torch.optim.Optimizer, start_epoch=0,num_epochs=num_epochs,loss_verbose_interval=show_loss_each_epoch,save_each=save_each):
     last_saved = 0
     for steps in range(start_epoch,start_epoch+num_epochs):
 
         
 
         # evaluate the loss
+        val_loss_accum = None
         t0 = time.time()
         optimizer.zero_grad(set_to_none=True)
         acum_loss = 0
@@ -116,19 +124,38 @@ def train(optimizer, start_epoch=0,num_epochs=num_epochs,loss_verbose_interval=s
         t1 = time.time()
         dt = (t1 - t0)*1000
         print(f"\rstep {steps+1}, loss: {acum_loss:.3f} | lr: {lr: .4e} | dt: {dt:.2f}ms | last saved: {last_saved}",end="               ")
-        if (steps + 1) % loss_verbose_interval == 0 and False:
-            losses = estimate_loss(m, train_data, test_data, batch_size=memory_batch_size, eval_iterations=10)
-            if target_path!=None:
-                m.save(target_path)
-                last_saved = steps+1
-            print(
-                f"\nstep {steps+1}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}"
-            )
-        elif (steps+1) % save_each==0:
+        # once in a while evaluate our validation loss
+        if (steps+1) % val_loss_frequency == 0:
+            m.eval()
+            test_data.reset()
+            val_loss_steps = 64
+            with torch.no_grad():
+                val_loss_accum = 0.0
+                val_loss_steps = 20
+                for _ in range(val_loss_steps):
+                    x, y = test_data.next_batch()
+                    x, y = x.to(device), y.to(device)    
+                    logits, loss = m(x, y)
+                    loss = loss / val_loss_steps
+                    val_loss_accum += loss.detach()
+            print(f"\nvalidation loss: {val_loss_accum.item():.4f}",end='')
+        if (steps+1) % gen_frequency==0:
+            prompt = "Hello, I am"
+            idx = torch.tensor(tokenizer.encode(prompt), dtype=torch.long, device=device)
+            idx = torch.reshape(idx, (1, len(idx)))
+            result = tokenizer.decode(m.generate(idx, 200)[0])
+            with open(csv_gen_path, 'a') as f:
+                write = csv.writer(f)
+                write.writerow([steps+1,prompt,result])
+            print(f"step {steps+1}, generation:",result,end='')
+        if (steps+1) % save_each==0:
             print('')
             if target_path!=None:
                 m.save(target_path, steps, optimizer.state_dict())
                 last_saved = steps+1
+        with open(csv_path, 'a') as f:
+            write = csv.writer(f)
+            write.writerow([steps+1,acum_loss.item(),(None if val_loss_accum==None else val_loss_accum.item()),lr])
     print("\ndone!")
 
 
@@ -142,6 +169,7 @@ def autoCompletePrint(model, text, max_tokens=200, step=1):
         print(tokenizer.decode(res[0][i + j : i + j + step]), end="")
         idx = res
     print('')
+    
 
 
 # create a PyTorch optimizer
@@ -150,6 +178,10 @@ optimizer = torch.optim.AdamW(m.parameters(), lr=1*1e-4, betas=(0.9, 0.95))
 if __name__ == "__main__":
     target = input('What is the target file : ')
     target_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target)
+    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+    csv_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../logs',target+'.csv')
+    csv_gen_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../logs',target+'.gen.csv')
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
     last_epoch = -1
     if(os.path.isfile(target_path)):
         last_epoch, optim_dict = m.load(target_path)
@@ -160,6 +192,12 @@ if __name__ == "__main__":
     else:
         print('Created the model with ',end='')
         print (sum(p.numel()for p in m. parameters())/1e6,'M parameters')
+        with open(csv_path, 'w') as f:
+            write = csv.writer(f)
+            write.writerow(csv_fields)
+        with open(csv_gen_path, 'w') as f:
+            write = csv.writer(f)
+            write.writerow(csv_gen_fields)
     print('Started compiling...',end='')
     m = torch.compile(m)
     print('compiled!')
