@@ -39,7 +39,7 @@ target = ''
 if target=='':
     target = input('What is the target model : ')
 
-m = torch.load(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target)))
+m = torch.load(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target)))['modelex#']
 m.to(device)
 
 
