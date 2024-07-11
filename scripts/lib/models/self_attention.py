@@ -89,13 +89,15 @@ class BasicSelfAttentionLanguageModel(Module):
             idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
         return idx
 
-    def save(self, path):
-        torch.save(self, path)
+    def save(self, path, epoch=None, optimizer_dict=None):
+        torch.save({'model':self,'epoch':epoch,'optimizer_dict':optimizer_dict}, path)
 
-    def load(self, path):
-        m = torch.load(path)
+    def load(self, path) -> list:
+        dict = torch.load(path)
+        m = dict['model']
         self.token_embedding_table = m.token_embedding_table
         self.position_embedding_table = m.position_embedding_table
         self.blocks = m.blocks
         self.ln_f = m.ln_f
         self.lm_head = m.lm_head
+        return dict['epoch'], dict['optimizer_dict']

@@ -23,11 +23,11 @@ context_size = 32
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Importing the data
-raw_data = compileFolder(["tate", "books"])
+#raw_data = compileFolder(["tate", "books"])
 # Creating the tokenizer
-tokenizer = BPETokenizer.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves','tokenizers/bpe_500.tok'))
+tokenizer = BPETokenizer.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves','tokenizers/fineweb-edu-1024.tok'))
 # Tokenizing and creating the dataset object
-data = TextChunksDataset(raw_data, context_size, tokenizer)
+#data = TextChunksDataset(raw_data, context_size, tokenizer)
 
 
 
