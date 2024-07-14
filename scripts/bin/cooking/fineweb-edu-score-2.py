@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     # Params
     shard_size = 100_000_000  # tokens
-    max_tokens = 2_000_000_000 # max number of tokens
+    max_tokens = 4_000_000_000 # max number of tokens
 
     DATA_CACHE_DIR = os.path.abspath(
         os.path.join(

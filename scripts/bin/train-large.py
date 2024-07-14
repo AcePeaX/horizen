@@ -26,7 +26,7 @@ from models import BasicSelfAttentionLanguageModel
 context_size = 1024
 # The number of chunks to be processed in parallel
 token_number_per_batch = 524_288
-memory_batch_size = 8
+memory_batch_size = 4
 
 micro_step_acum = (token_number_per_batch//context_size//memory_batch_size)
 batch_size = micro_step_acum*memory_batch_size
@@ -34,9 +34,9 @@ batch_size = micro_step_acum*memory_batch_size
 # How much does the test/validation set represent of the total data
 test_train_split_ratio = 0.08
 
-n_embd = 768  # Number of embedding
-n_layers = 12  # Number of self attention blocks layers
-n_heads = 12  # The number of heads
+n_embd = 1024  # Number of embedding
+n_layers = 16  # Number of self attention blocks layers
+n_heads = 16  # The number of heads
 
 dropout = 0.2   # Dropout rate, to avoid overfitting
 
@@ -68,7 +68,7 @@ m.to(device)
 num_epochs = 1000
 show_loss_each_epoch = 200
 save_each = 10
-val_loss_frequency = 100
+val_loss_frequency = 50
 gen_frequency = 100
 
 
@@ -187,6 +187,7 @@ if __name__ == "__main__":
         last_epoch, optim_dict = m.load(target_path)
         optimizer = torch.optim.AdamW(m.parameters(), lr=1*1e-4)
         optimizer.load_state_dict(optim_dict)
+        train_data.reset(int(last_epoch*token_number_per_batch/100_000_000))
         print('Loaded the model :',target,'with ',end='')
         print(sum(p.numel()for p in m. parameters())/1e6,'M parameters')
     else:
