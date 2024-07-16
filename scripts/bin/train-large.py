@@ -138,7 +138,7 @@ def train(optimizer: torch.optim.Optimizer, start_epoch=0,num_epochs=num_epochs,
                     logits, loss = m(x, y)
                     loss = loss / val_loss_steps
                     val_loss_accum += loss.detach()
-            print(f"\nvalidation loss: {val_loss_accum.item():.4f}",end='')
+            print(f"\nvalidation loss: {val_loss_accum.item():.4f}",end='\n')
         if (steps+1) % gen_frequency==0:
             prompt = "Hello, I am"
             idx = torch.tensor(tokenizer.encode(prompt), dtype=torch.long, device=device)
