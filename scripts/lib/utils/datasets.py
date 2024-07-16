@@ -151,7 +151,7 @@ def load_tokens(filename):
     return ptt
 
 class ShardDataLoader:
-    def __init__(self, B, T, dir, split, process_rank=1, num_processes=1):
+    def __init__(self, B, T, dir, split, process_rank=1, num_processes=1, current_shard=0):
         self.B = B
         self.T = T
         self.process_rank = process_rank
@@ -168,11 +168,11 @@ class ShardDataLoader:
         assert len(shards) > 0, f"no shards found for split {split}"
         if __name__=='__name__':
             print(f"found {len(shards)} shards for split {split}")
-        self.reset()
+        self.reset(current_shard)
 
-    def reset(self):
+    def reset(self, current_shard=0):
         # state, init at shard zero
-        self.current_shard = 0
+        self.current_shard = current_shard % len(self.shards)
         self.tokens = load_tokens(self.shards[self.current_shard])
         self.current_position = self.B * self.T * self.process_rank
 

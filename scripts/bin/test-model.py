@@ -39,7 +39,7 @@ target = ''
 if target=='':
     target = input('What is the target model : ')
 
-m = torch.load(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target)))['modelex#']
+m = torch.load(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target)))['model']
 m.to(device)
 
 
@@ -47,25 +47,37 @@ autocomplete = ""
 
 max_tokens = 200
 
-print('Loaded the model :',target,'with ',end='')
+print('\033[0mLoaded the model :',target,'with ',end='')
 print (sum(p.numel()for p in m. parameters())/1e6,'M parameters')
 
+res = torch.zeros((1,1), dtype=torch.long, device=device)
+prompt_end = 0
+res[0,0]=tokenizer.eot_token
 autocomplete = input("Type in some text to autocomplete (STOP to stop) : ")
 while autocomplete!='STOP':
     if autocomplete=='RELOAD':
         print('\nReloading the model...',end='')
-        m = torch.load(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target)))
+        m = torch.load(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target)))['model']
+        m.to(device)
         print('loaded :',target,'!')
     else:
-        if autocomplete!='':
-            idx = torch.tensor(tokenizer.encode(autocomplete), dtype=torch.long, device=device)
+        if autocomplete=='CONTINUE':
+            idx = res
+        elif autocomplete!='':
+            idx = torch.tensor([tokenizer.eot_token]+tokenizer.encode(autocomplete), dtype=torch.long, device=device)
             idx = idx.reshape((1, len(idx)))
+            prompt_end = len(idx[0])
         else:
             idx = torch.zeros((1,1), dtype=torch.long, device=device)
-        res = m.generate(idx=idx, max_new_tokens=max_tokens)
-        for i in range(len(idx[0]),len(res[0])):
-            if res[0,i].item()==0 and False:
-                break
-        print(tokenizer.decode(res[0,:i+1])+"\n")
+            idx[0,0]=tokenizer.eot_token
+            prompt_end = len(idx[0])
+        print('\033[32m'+tokenizer.decode(idx[0][:prompt_end]),end='')
+        print('\033[0m'+tokenizer.decode(idx[0][prompt_end:]),end='\033[35m')
+        res = idx
+        for i in range(max_tokens):
+            res = m.generate(idx=res, max_new_tokens=1)
+            print(tokenizer.decode(res[0,i+len(idx[0]):]),end='')
+            sys.stdout.flush()
+        print('\033[0m\n')
     autocomplete = input("Type in some text to autocomplete (STOP to stop) : ")
 
