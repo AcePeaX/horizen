@@ -30,3 +30,9 @@ Quickly create a folder for logs :
 ```shell
 mkdir logs
 ```
+
+## Useful commands
+Here are some usefull commands:
+- `make train` : executes the training script in `scripts/bin`, will use the hyperparameters specified, otherwise reverts to saved file in `saves` directory.
+- `make test` : executes the testing script in `scripts/bin`, especially usefull for text generation.
+- `make plot` : generates a PNG file containing the plots of the training. Don't forget to put the nave of the model in `plot.py` file in `scripts/bin`.
