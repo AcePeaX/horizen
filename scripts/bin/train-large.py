@@ -188,6 +188,9 @@ if __name__ == "__main__":
         optimizer = torch.optim.AdamW(m.parameters(), lr=1*1e-4)
         optimizer.load_state_dict(optim_dict)
         train_data.reset(int(last_epoch*token_number_per_batch/100_000_000))
+        if m.vocab_size==1025:
+            tokenizer = BPETokenizer.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves','tokenizers/fineweb-edu-1024.tok'))
+            print('Loaded specialized tokenizer')
         print('Loaded the model :',target,'with ',end='')
         print(sum(p.numel()for p in m. parameters())/1e6,'M parameters')
     else:

@@ -2,10 +2,10 @@ import matplotlib.pyplot as plt
 import csv
 import os
 
-toPlot = ["pre-horizen-2BT-87M-maserati.zen.csv",
-          "pre-horizen-2BT-204M.zen.csv",
+toPlot = ["pre-horizen-2BT-204M.zen.csv",
           "pre-horizen-4BT-1024VS-87M.zen.csv",
-          "pre-horizen-4BT-1024VS-204M.zen.csv"]
+          "pre-horizen-4BT-1024VS-204M.zen.csv",
+          "pre-horizen-4BT-1025VS-204M.zen.csv"]
 
 if type(toPlot)==str:
     toPlot = [toPlot]
