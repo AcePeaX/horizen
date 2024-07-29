@@ -186,7 +186,8 @@ if __name__ == "__main__":
     if(os.path.isfile(target_path)):
         last_epoch, optim_dict = m.load(target_path)
         optimizer = torch.optim.AdamW(m.parameters(), lr=1*1e-4)
-        optimizer.load_state_dict(optim_dict)
+        if optim_dict!=None:
+            optimizer.load_state_dict(optim_dict)
         train_data.reset(int(last_epoch*token_number_per_batch/100_000_000))
         if m.vocab_size==1025:
             tokenizer = BPETokenizer.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves','tokenizers/fineweb-edu-1024.tok'))
