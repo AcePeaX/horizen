@@ -92,8 +92,11 @@ class BasicSelfAttentionLanguageModel(Module):
     def save(self, path, epoch=None, optimizer_dict=None):
         torch.save({'model':self,'epoch':epoch,'optimizer_dict':optimizer_dict}, path)
 
-    def load(self, path) -> list:
-        dict = torch.load(path)
+    def load(self, path, map_location=None) -> list:
+        if map_location==None:
+            dict = torch.load(path)
+        else:
+            dict = torch.load(path, map_location=map_location)
         m = dict['model']
         self.token_embedding_table = m.token_embedding_table
         self.position_embedding_table = m.position_embedding_table
