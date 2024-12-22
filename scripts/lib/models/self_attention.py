@@ -103,4 +103,7 @@ class BasicSelfAttentionLanguageModel(Module):
         self.blocks = m.blocks
         self.ln_f = m.ln_f
         self.lm_head = m.lm_head
+        self.vocab_size = m.vocab_size
+        self.n_embd = m.n_embd
+        self.n_heads = m.n_heads
         return dict['epoch'], dict['optimizer_dict']

@@ -42,6 +42,9 @@ if target=='':
 m = torch.load(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves',target)))['model']
 m.to(device)
 
+if m.vocab_size==1025:
+    tokenizer = BPETokenizer.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../saves','tokenizers/fineweb-edu-1025.tok'))
+
 
 autocomplete = ""
 
