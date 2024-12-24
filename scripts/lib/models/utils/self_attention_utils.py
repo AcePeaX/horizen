@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+
 class Head(nn.Module):
     """One head of self attention"""
 
@@ -77,6 +78,8 @@ class Block(nn.Module):
         # n_embd: embedding dimension, n_heads: the number of heads we'd like
         super().__init__()
         head_size = n_embd // n_heads
+        self.debug_int = 0
+        self.debug_order = 0
         self.sa = MultiHeadAttention(
             n_heads, n_embd, head_size, block_size, dropout=dropout
         )
@@ -85,6 +88,12 @@ class Block(nn.Module):
         self.ln2 = nn.LayerNorm(n_embd)
 
     def forward(self, x):
+        if(self.debug_int==5):
+            print(self.debug_int,self.debug_order)
+            print(x.shape)
         x = x + self.sa(self.ln1(x))
+
+        if(self.debug_int==5):
+            print(x.shape)
         x = x + self.ffwd(self.ln2(x))
         return x

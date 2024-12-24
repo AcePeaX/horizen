@@ -6,8 +6,11 @@ import torch.nn.functional as F
 from .module import Module
 from .utils import Block
 
+
 import sys
 import os
+
+
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -38,6 +41,7 @@ class BasicSelfAttentionLanguageModel(Module):
             else:
                 raise Exception("You need to specify the context length")
         self.context_size = context_size
+        self.debug_int=-1
         if type(vocab_size) == TextChunksDataset:
             vocab_size = len(vocab_size.tokenizer)
         elif type(vocab_size) == CharTokenizer:
@@ -52,9 +56,14 @@ class BasicSelfAttentionLanguageModel(Module):
         self.ln_f = nn.LayerNorm(n_embd)
         self.lm_head = nn.Linear(n_embd, vocab_size)
 
-    def forward(self, idx, targets=None):
+    def forward(self, idx, targets=None, loss_offset=None):
         B, T = idx.shape
 
+        i=0
+        for m in self.blocks:
+            m.debug_int = self.debug_int
+            m.debug_order = i
+            i+=1
         # idx and targets are both (B,T) tensor of integers
         tok_embd = self.token_embedding_table(idx)  # (B,T,C)
         pos_embd = self.position_embedding_table(
@@ -69,9 +78,12 @@ class BasicSelfAttentionLanguageModel(Module):
             loss = None
         else:
             B, T, C = logits.shape
-            logits = logits.view(B * T, C)
-            targets = targets.view(B * T)
-            loss = F.cross_entropy(logits, targets)
+            logits_loss = logits.view(B * T, C)
+            targets_loss = targets.view(B * T)
+            if(loss_offset!=None):
+                logits_loss=logits_loss[loss_offset:]
+                targets_loss=targets_loss[loss_offset:]
+            loss = F.cross_entropy(logits_loss, targets_loss)
 
         return logits, loss
 

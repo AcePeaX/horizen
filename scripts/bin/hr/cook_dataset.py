@@ -10,10 +10,11 @@ dir_path = os.path.abspath(
 sys.path.append(dir_path)
 
 from hr import generate_prompts_all_rows, pair_matches
-from utils.tokenizer import BPETokenizer
+from utils.tokenizer import BPETokenizer, END_CHAR
 
 # Initialize tokenizer
-tokenizer = BPETokenizer(special_tokens={"<|endoftext|>": 1023})
+tokenizer = BPETokenizer.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../../saves','tokenizers/fineweb-edu-1024.tok'))
+
 
 # Define tokenizing function
 def tokenize(doc):
@@ -22,12 +23,14 @@ def tokenize(doc):
         tokenizer.eot_token
     ]  # the special <|endoftext|> token delimits all documents
     tokens.extend(tokenizer.encode(doc["text"]))
+    tokens.append(tokenizer.eot_token)
     tokens_np = np.array(tokens)
     assert (0 <= tokens_np).all() and (
         tokens_np < 2**16
     ).all(), "token dictionary too large for uint16"
     tokens_np_uint16 = tokens_np.astype(np.uint16)
     return tokens_np_uint16
+
 
 # Paths to dataset files
 job_file = "assets/hr/company_dataset_job_offers.csv"
