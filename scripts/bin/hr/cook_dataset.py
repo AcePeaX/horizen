@@ -84,3 +84,6 @@ def load_prompts(file_path):
 # Example: Load and print prompts dynamically
 for score, tokens in load_prompts(output_path):
     print(f"Score: {score}, Tokens: {tokens[:10]}...")  # Print first 10 tokens for brevity
+
+
+print("Cooked the dataset. To use it, move the file into assets/hr")
